@@ -19,8 +19,11 @@ import com.promptswave.exception.ResourceNotFoundException;
 import com.promptswave.repository.AiEntityRepo;
 import com.promptswave.repository.CategoryRepo;
 import com.promptswave.repository.PromptAiEntityRepo;
+import com.promptswave.repository.PromptCopyEventRepo;
+import com.promptswave.repository.PromptLikeRepo;
 import com.promptswave.repository.PromptRepo;
 import com.promptswave.repository.UserRepo;
+import com.promptswave.repository.UserSavedPromptRepo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,18 +36,27 @@ public class PromptService {
     private final AiEntityRepo aiEntityRepo;
     private final PromptAiEntityRepo promptAiEntityRepo;
     private final UserRepo userRepo;
+    private final PromptLikeRepo promptLikeRepo;
+    private final UserSavedPromptRepo userSavedPromptRepo;
+    private final PromptCopyEventRepo promptCopyEventRepo;
 
     public PromptService(
             PromptRepo promptRepo,
             CategoryRepo categoryRepo,
             AiEntityRepo aiEntityRepo,
             PromptAiEntityRepo promptAiEntityRepo,
-            UserRepo userRepo) {
+            UserRepo userRepo,
+            PromptLikeRepo promptLikeRepo,
+            UserSavedPromptRepo userSavedPromptRepo,
+            PromptCopyEventRepo promptCopyEventRepo) {
         this.promptRepo = promptRepo;
         this.categoryRepo = categoryRepo;
         this.aiEntityRepo = aiEntityRepo;
         this.promptAiEntityRepo = promptAiEntityRepo;
         this.userRepo = userRepo;
+        this.promptLikeRepo = promptLikeRepo;
+        this.userSavedPromptRepo = userSavedPromptRepo;
+        this.promptCopyEventRepo = promptCopyEventRepo;
     }
 
     
@@ -158,10 +170,11 @@ public class PromptService {
         if (request.imageUrl() != null) prompt.setImageUrl(request.imageUrl());
         if (request.isPublished() != null) prompt.setIsPublished(request.isPublished());
 
-        promptAiEntityRepo.deleteByPromptId(id);
+        prompt.getRecommendedAiEntities().clear();
+        promptRepo.saveAndFlush(prompt);
+
         List<PromptAiEntity> aiLinks = buildAiLinks(prompt, request.recommendedAiEntityIds());
-        promptAiEntityRepo.saveAll(aiLinks);
-        prompt.setRecommendedAiEntities(aiLinks);
+        prompt.getRecommendedAiEntities().addAll(aiLinks);
 
         return toResponse(promptRepo.save(prompt));
     }
@@ -179,6 +192,9 @@ public class PromptService {
         if (!promptRepo.existsById(id)) {
             throw new ResourceNotFoundException("Prompt not found");
         }
+        promptLikeRepo.deleteByPromptId(id);
+        userSavedPromptRepo.deleteByPromptId(id);
+        promptCopyEventRepo.deleteByPromptId(id);
         promptRepo.deleteById(id);
     }
 

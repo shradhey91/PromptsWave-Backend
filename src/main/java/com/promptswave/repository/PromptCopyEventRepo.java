@@ -3,6 +3,7 @@ package com.promptswave.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,4 +29,12 @@ public interface PromptCopyEventRepo extends JpaRepository<PromptCopyEvent, Long
     // Admin: copy count per prompt for top-copied leaderboard
     @Query("SELECT c.prompt.id, COUNT(c) as copies FROM PromptCopyEvent c GROUP BY c.prompt.id ORDER BY copies DESC")
     Page<Object[]> findTopCopiedPromptIds(Pageable pageable);
+
+    @Modifying
+    @Query("DELETE FROM PromptCopyEvent c WHERE c.prompt.id = :promptId")
+    void deleteByPromptId(Long promptId);
+
+    @Modifying
+    @Query("DELETE FROM PromptCopyEvent c WHERE c.user.id = :userId")
+    void deleteByUserId(Long userId);
 }

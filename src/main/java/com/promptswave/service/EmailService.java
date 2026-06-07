@@ -16,6 +16,9 @@ public class EmailService {
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
+    @Value("${spring.mail.username}")
+    private String fromAddress;
+
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
@@ -24,15 +27,15 @@ public class EmailService {
         String url = baseUrl + "/api/auth/verify?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
         message.setTo(to);
-        message.setSubject("Verify your PromptVault Account");
+        message.setSubject("Verify your PromptsWave Account");
         message.setText(
-            "Welcome to PromptVault!\n\n" +
-            "Please click the link below to verify your email address:\n\n" +
-            url + "\n\n" +
-            "This link expires in 24 hours.\n\n" +
-            "If you did not create an account, you can safely ignore this email."
-        );
+                "Welcome to PromptsWave!\n\n" +
+                        "Please click the link below to verify your email address:\n\n" +
+                        url + "\n\n" +
+                        "This link expires in 24 hours.\n\n" +
+                        "If you did not create an account, you can safely ignore this email.");
         mailSender.send(message);
     }
 
@@ -40,15 +43,15 @@ public class EmailService {
         String url = frontendUrl + "/reset-password?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
         message.setTo(to);
-        message.setSubject("Reset your PromptVault Password");
+        message.setSubject("Reset your PromptsWave Password");
         message.setText(
-            "You requested a password reset for your PromptVault account.\n\n" +
-            "Click the link below to set a new password:\n\n" +
-            url + "\n\n" +
-            "This link expires in 1 hour.\n\n" +
-            "If you did not request this, you can safely ignore this email."
-        );
+                "You requested a password reset for your PromptsWave account.\n\n" +
+                        "Click the link below to set a new password:\n\n" +
+                        url + "\n\n" +
+                        "This link expires in 1 hour.\n\n" +
+                        "If you did not request this, you can safely ignore this email.");
         mailSender.send(message);
     }
 
@@ -56,14 +59,14 @@ public class EmailService {
         String url = baseUrl + "/api/auth/verify?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
         message.setTo(to);
-        message.setSubject("Verify your new email - PromptVault");
+        message.setSubject("Verify your new email - PromptsWave");
         message.setText(
-            "You requested an email address change on PromptVault.\n\n" +
-            "Please verify your new email address by clicking the link below:\n\n" +
-            url + "\n\n" +
-            "This link expires in 24 hours."
-        );
+                "You requested an email address change on PromptsWave.\n\n" +
+                        "Please verify your new email address by clicking the link below:\n\n" +
+                        url + "\n\n" +
+                        "This link expires in 24 hours.");
         mailSender.send(message);
     }
 }

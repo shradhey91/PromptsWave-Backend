@@ -3,6 +3,7 @@ package com.promptswave.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -22,4 +23,12 @@ public interface PromptLikeRepo extends JpaRepository<PromptLike, Long> {
     Page<PromptLike> findByUserIdWithPrompt(Long userId, Pageable pageable);
 
     long countByPromptId(Long promptId);
+
+    @Modifying
+    @Query("DELETE FROM PromptLike pl WHERE pl.prompt.id = :promptId")
+    void deleteByPromptId(Long promptId);
+
+    @Modifying
+    @Query("DELETE FROM PromptLike pl WHERE pl.user.id = :userId")
+    void deleteByUserId(Long userId);
 }

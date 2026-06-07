@@ -19,10 +19,13 @@ import com.promptswave.exception.ConflictException;
 import com.promptswave.exception.ResourceNotFoundException;
 import com.promptswave.repository.AiEntityRepo;
 import com.promptswave.repository.CategoryRepo;
+import com.promptswave.repository.EmailVerificationTokenRepo;
+import com.promptswave.repository.PasswordResetTokenRepo;
 import com.promptswave.repository.PromptCopyEventRepo;
 import com.promptswave.repository.PromptLikeRepo;
 import com.promptswave.repository.PromptRepo;
 import com.promptswave.repository.UserRepo;
+import com.promptswave.repository.UserSavedPromptRepo;
 
 import java.util.List;
 
@@ -35,6 +38,9 @@ public class AdminDashboardService {
     private final AiEntityRepo aiEntityRepo;
     private final PromptLikeRepo promptLikeRepo;
     private final PromptCopyEventRepo promptCopyEventRepo;
+    private final UserSavedPromptRepo userSavedPromptRepo;
+    private final EmailVerificationTokenRepo emailVerificationTokenRepo;
+    private final PasswordResetTokenRepo passwordResetTokenRepo;
 
     public AdminDashboardService(
             UserRepo userRepo,
@@ -42,13 +48,19 @@ public class AdminDashboardService {
             CategoryRepo categoryRepo,
             AiEntityRepo aiEntityRepo,
             PromptLikeRepo promptLikeRepo,
-            PromptCopyEventRepo promptCopyEventRepo) {
+            PromptCopyEventRepo promptCopyEventRepo,
+            UserSavedPromptRepo userSavedPromptRepo,
+            EmailVerificationTokenRepo emailVerificationTokenRepo,
+            PasswordResetTokenRepo passwordResetTokenRepo) {
         this.userRepo = userRepo;
         this.promptRepo = promptRepo;
         this.categoryRepo = categoryRepo;
         this.aiEntityRepo = aiEntityRepo;
         this.promptLikeRepo = promptLikeRepo;
         this.promptCopyEventRepo = promptCopyEventRepo;
+        this.userSavedPromptRepo = userSavedPromptRepo;
+        this.emailVerificationTokenRepo = emailVerificationTokenRepo;
+        this.passwordResetTokenRepo = passwordResetTokenRepo;
     }
 
     // DASHBOARD STATS
@@ -128,6 +140,11 @@ public class AdminDashboardService {
     @Transactional
     public void deleteUser(Long userId) {
         User user = getRegularUser(userId);
+        emailVerificationTokenRepo.deleteByUserId(userId);
+        passwordResetTokenRepo.deleteByUserId(userId);
+        promptLikeRepo.deleteByUserId(userId);
+        userSavedPromptRepo.deleteByUserId(userId);
+        promptCopyEventRepo.deleteByUserId(userId);
         userRepo.delete(user);
     }
 

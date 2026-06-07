@@ -36,9 +36,23 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints 
+                // Public auth endpoints (no token required)
                 .requestMatchers(
-                    "/api/auth/**",
+                    "/api/auth/register",
+                    "/api/auth/login",
+                    "/api/auth/logout",
+                    "/api/auth/refresh",
+                    "/api/auth/verify",
+                    "/api/auth/resend-verification",
+                    "/api/auth/forgot-password",
+                    "/api/auth/reset-password"
+                ).permitAll()
+                // Authenticated auth endpoints (token required)
+                .requestMatchers(
+                    "/api/auth/change-password",
+                    "/api/auth/change-email"
+                ).authenticated()
+                .requestMatchers(
                     "/api/public/**",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
