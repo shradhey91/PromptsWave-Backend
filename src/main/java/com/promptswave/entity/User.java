@@ -54,7 +54,7 @@ public class User {
     private Role role;
 
     @Column(nullable = false)
-    private Boolean isEmailVerified;
+    private Boolean isEmailVerified = true;
 
     @Column(nullable = false)
     private Boolean isActive;

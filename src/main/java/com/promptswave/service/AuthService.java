@@ -83,7 +83,7 @@ public class AuthService {
 
         userRepo.save(user);
 
-        sendVerificationToken(user);
+        // sendVerificationToken(user);
 
         return "Registration successful. Please check your email to verify your account.";
     }
