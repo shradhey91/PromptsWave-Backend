@@ -77,7 +77,7 @@ public class AuthService {
                 .country(request.country())
                 .referralSource(request.referralSource())
                 .role(Role.USER)
-                .isEmailVerified(false)
+                .isEmailVerified(true)
                 .isActive(true)
                 .build();
 
