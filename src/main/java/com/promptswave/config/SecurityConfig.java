@@ -81,7 +81,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         List<String> origins = new ArrayList<>(List.of(
-                "http://localhost:5173",
+                "http://localhost:5173","http://localhost:5174/","https://promptswave.com/",
                 "http://localhost:3000",
                 baseUrl,
                 frontendUrl
