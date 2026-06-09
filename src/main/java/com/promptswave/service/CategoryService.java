@@ -125,9 +125,9 @@ public class CategoryService {
                     "Move or delete those prompts first.");
         }
 
-        // Soft delete
-        category.setIsActive(false);
-        categoryRepo.save(category);
+        categoryRepo.delete(category);
+        //category.setIsActive(false);
+       // categoryRepo.save(category);
     }
 
     // All categories (including inactive) for admin management view
