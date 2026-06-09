@@ -25,7 +25,6 @@ public class CategoryService {
 
     // PUBLIC 
 
-    // Full tree: top-level categories each with their subcategories (for nav menus)
     public List<CategoryTreeResponse> getCategoryTree() {
         List<Category> topLevel = categoryRepo
                 .findByParentIsNullAndIsActiveTrueOrderBySortOrderAsc();
@@ -130,14 +129,14 @@ public class CategoryService {
        // categoryRepo.save(category);
     }
 
-    // All categories (including inactive) for admin management view
+    
     public List<CategoryResponse> getAllForAdmin() {
         return categoryRepo.findAll().stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    // ── MAPPER ────────────────────────────────────────────────────────────────
+    
 
     public CategoryResponse toResponse(Category category) {
         long promptCount = categoryRepo.countPublishedPromptsByCategoryId(category.getId());

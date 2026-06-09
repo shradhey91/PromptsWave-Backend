@@ -59,7 +59,6 @@ public class PromptService {
         this.promptCopyEventRepo = promptCopyEventRepo;
     }
 
-    
     public PagedResponse<PromptSummaryResponse> browsePrompts(
             String sort,
             Long categoryId,
@@ -76,11 +75,13 @@ public class PromptService {
         boolean hasAiFilter = aiEntityId != null;
 
         if (hasSearch && hasCategoryFilter) {
-            result = promptRepo.searchPublishedInCategory(search.trim(), categoryId, pageable);
+            result = promptRepo.searchPublishedInCategoryIds(
+                    search.trim(), resolveCategorySubtreeIds(categoryId), pageable);
         } else if (hasSearch) {
             result = promptRepo.searchPublished(search.trim(), pageable);
         } else if (hasCategoryFilter) {
-            result = promptRepo.findByCategoryOrSubcategoryAndPublished(categoryId, pageable);
+            result = promptRepo.findByCategoryIdsAndPublished(
+                    resolveCategorySubtreeIds(categoryId), pageable);
         } else if (hasAiFilter) {
             result = promptRepo.findByRecommendedAiEntityAndPublished(aiEntityId, pageable);
         } else {
@@ -88,6 +89,19 @@ public class PromptService {
         }
 
         return PagedResponse.from(result.map(this::toSummaryResponse));
+    }
+
+    private List<Long> resolveCategorySubtreeIds(Long rootId) {
+        List<Long> ids = new ArrayList<>();
+        java.util.Deque<Long> stack = new java.util.ArrayDeque<>();
+        stack.push(rootId);
+        while (!stack.isEmpty()) {
+            Long id = stack.pop();
+            ids.add(id);
+            categoryRepo.findByParentIdAndIsActiveTrueOrderBySortOrderAsc(id)
+                    .forEach(child -> stack.push(child.getId()));
+        }
+        return ids;
     }
 
     public PromptResponse getPublishedPromptById(Long id) {
@@ -167,8 +181,10 @@ public class PromptService {
         prompt.setPromptText(request.promptText().trim());
         prompt.setDescription(request.description());
         prompt.setCategory(category);
-        if (request.imageUrl() != null) prompt.setImageUrl(request.imageUrl());
-        if (request.isPublished() != null) prompt.setIsPublished(request.isPublished());
+        if (request.imageUrl() != null)
+            prompt.setImageUrl(request.imageUrl());
+        if (request.isPublished() != null)
+            prompt.setIsPublished(request.isPublished());
 
         prompt.getRecommendedAiEntities().clear();
         promptRepo.saveAndFlush(prompt);
@@ -219,12 +235,12 @@ public class PromptService {
 
     private Pageable buildPageable(String sort, int page, int size) {
         Sort sorting = switch (sort != null ? sort : "newest") {
-            case "mostLiked"  -> Sort.by(Sort.Direction.DESC, "likesCount");
-            case "mostUsed"   -> Sort.by(Sort.Direction.DESC, "timesCopied");
-            case "trending"   -> Sort.by(
-                                    Sort.Order.desc("likesCount"),
-                                    Sort.Order.desc("timesCopied"));
-            default           -> Sort.by(Sort.Direction.DESC, "createdAt");
+            case "mostLiked" -> Sort.by(Sort.Direction.DESC, "likesCount");
+            case "mostUsed" -> Sort.by(Sort.Direction.DESC, "timesCopied");
+            case "trending" -> Sort.by(
+                    Sort.Order.desc("likesCount"),
+                    Sort.Order.desc("timesCopied"));
+            default -> Sort.by(Sort.Direction.DESC, "createdAt");
         };
         return PageRequest.of(page, size, sorting);
     }
@@ -267,11 +283,12 @@ public class PromptService {
                 prompt.getCategory().getSortOrder(),
                 prompt.getCategory().getIsActive(),
                 prompt.getCategory().getParent() != null
-                        ? prompt.getCategory().getParent().getId() : null,
+                        ? prompt.getCategory().getParent().getId()
+                        : null,
                 prompt.getCategory().getParent() != null
-                        ? prompt.getCategory().getParent().getName() : null,
-                0L
-        );
+                        ? prompt.getCategory().getParent().getName()
+                        : null,
+                0L);
 
         return new PromptResponse(
                 prompt.getId(),
@@ -286,8 +303,7 @@ public class PromptService {
                 prompt.getIsPublished(),
                 prompt.getUploadedBy().getName(),
                 prompt.getCreatedAt(),
-                prompt.getUpdatedAt()
-        );
+                prompt.getUpdatedAt());
     }
 
     public PromptSummaryResponse toSummaryResponse(Prompt prompt) {
@@ -305,7 +321,6 @@ public class PromptService {
                 aiNames,
                 prompt.getTimesCopied(),
                 prompt.getLikesCount(),
-                prompt.getCreatedAt()
-        );
+                prompt.getCreatedAt());
     }
 }
