@@ -77,13 +77,13 @@ public class AuthService {
                 .country(request.country())
                 .referralSource(request.referralSource())
                 .role(Role.USER)
-                .isEmailVerified(true)
+                .isEmailVerified(false)
                 .isActive(true)
                 .build();
 
         userRepo.save(user);
 
-        // sendVerificationToken(user);
+         sendVerificationToken(user);
 
         return "Registration successful. Please check your email to verify your account.";
     }
