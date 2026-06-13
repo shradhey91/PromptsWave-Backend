@@ -71,6 +71,12 @@ public class AdminPromptController {
         return ResponseEntity.ok(promptService.togglePublish(id));
     }
 
+    @PatchMapping("/{id}/toggle-hero-pin")
+    @Operation(summary = "Pin or unpin a prompt to the homepage hero section")
+    public ResponseEntity<PromptResponse> toggleHeroPin(@PathVariable Long id) {
+        return ResponseEntity.ok(promptService.toggleHeroPin(id));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Permanently delete a prompt")
     public ResponseEntity<Map<String, String>> delete(@PathVariable Long id) {

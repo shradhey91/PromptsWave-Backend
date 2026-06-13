@@ -40,38 +40,40 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> {})
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Public auth endpoints (no token required)
-                .requestMatchers(
-                    "/api/auth/register",
-                    "/api/auth/login",
-                    "/api/auth/logout",
-                    "/api/auth/refresh",
-                    "/api/auth/verify",
-                    "/api/auth/resend-verification",
-                    "/api/auth/forgot-password",
-                    "/api/auth/reset-password"
-                ).permitAll()
-                // Authenticated auth endpoints (token required)
-                .requestMatchers(
-                    "/api/auth/change-password",
-                    "/api/auth/change-email"
-                ).authenticated()
-                .requestMatchers(
-                    "/api/public/**",
-                    "/v3/api-docs/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html"
-                ).permitAll()
-                // Admin-only endpoints
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                // All other endpoints require authentication
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .cors(cors -> {
+                })
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Public auth endpoints (no token required)
+                        .requestMatchers(
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/google",
+                                "/api/auth/google/url",
+                                "/api/auth/logout",
+                                "/api/auth/refresh",
+                                "/api/auth/verify",
+                                "/api/auth/resend-verification",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password")
+                        .permitAll()
+                        // Authenticated auth endpoints (token required)
+                        .requestMatchers(
+                                "/api/auth/change-password",
+                                "/api/auth/change-email")
+                        .authenticated()
+                        .requestMatchers(
+                                "/api/public/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html")
+                        .permitAll()
+                        // Admin-only endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // All other endpoints require authentication
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -81,11 +83,10 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         List<String> origins = new ArrayList<>(List.of(
-                "http://localhost:5173","http://localhost:5174/","https://promptswave.com/",
+                "http://localhost:5173", "http://localhost:5174", "https://promptswave.com",
                 "http://localhost:3000",
                 baseUrl,
-                frontendUrl
-        ));
+                frontendUrl));
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

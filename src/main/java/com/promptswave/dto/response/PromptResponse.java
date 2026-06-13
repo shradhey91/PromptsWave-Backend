@@ -14,6 +14,7 @@ public record PromptResponse(
         Integer timesCopied,
         Integer likesCount,
         Boolean isPublished,
+        Boolean isPinnedToHero,
         String uploadedBy,
         LocalDateTime createdAt,
         LocalDateTime updatedAt) {

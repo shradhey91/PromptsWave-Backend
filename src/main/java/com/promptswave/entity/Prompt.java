@@ -53,6 +53,9 @@ public class Prompt {
     @Column(nullable = false)
     private Boolean isPublished;
 
+    @Column(nullable = false)
+    private Boolean isPinnedToHero;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -71,6 +74,8 @@ public class Prompt {
             likesCount = 0;
         if (isPublished == null)
             isPublished = false;
+        if (isPinnedToHero == null)
+            isPinnedToHero = false;
     }
 
     @PreUpdate

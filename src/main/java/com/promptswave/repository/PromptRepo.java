@@ -104,4 +104,26 @@ public interface PromptRepo extends JpaRepository<Prompt, Long> {
         Page<Prompt> searchAll(@Param("query") String query, Pageable pageable);
 
         long countByIsPublishedTrue();
+
+        // ── Hero section ───────────────────────────────────────────────
+
+        java.util.List<Prompt> findByIsPinnedToHeroTrueAndIsPublishedTrueOrderByUpdatedAtDesc();
+
+        @Query("""
+                        SELECT p FROM Prompt p
+                        WHERE p.isPublished = true
+                          AND p.id NOT IN :excludeIds
+                        ORDER BY p.likesCount DESC, p.timesCopied DESC, p.createdAt DESC
+                        """)
+        java.util.List<Prompt> findTopByLikesExcluding(
+                        @Param("excludeIds") java.util.List<Long> excludeIds, Pageable pageable);
+
+        @Query("""
+                        SELECT p FROM Prompt p
+                        WHERE p.isPublished = true
+                          AND p.id NOT IN :excludeIds
+                        ORDER BY p.timesCopied DESC, p.likesCount DESC, p.createdAt DESC
+                        """)
+        java.util.List<Prompt> findTopByCopiesExcluding(
+                        @Param("excludeIds") java.util.List<Long> excludeIds, Pageable pageable);
 }

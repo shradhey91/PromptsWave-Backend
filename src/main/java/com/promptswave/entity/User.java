@@ -2,6 +2,7 @@ package com.promptswave.entity;
 
 import java.time.LocalDateTime;
 
+import com.promptswave.enums.AuthProvider;
 import com.promptswave.enums.Role;
 
 import jakarta.persistence.Column;
@@ -53,6 +54,10 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuthProvider authProvider;
+
     @Column(nullable = false)
     private Boolean isEmailVerified = true;
 
@@ -75,6 +80,8 @@ public class User {
             isActive = true;
         if (role == null)
             role = Role.USER;
+        if (authProvider == null)
+            authProvider = AuthProvider.LOCAL;
     }
 
     @PreUpdate

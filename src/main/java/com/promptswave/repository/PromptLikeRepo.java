@@ -18,7 +18,6 @@ public interface PromptLikeRepo extends JpaRepository<PromptLike, Long> {
 
     Optional<PromptLike> findByUserIdAndPromptId(Long userId, Long promptId);
 
-    // All prompts liked by a user (for "my liked prompts" page)
     @Query("SELECT pl FROM PromptLike pl JOIN FETCH pl.prompt p WHERE pl.user.id = :userId AND p.isPublished = true")
     Page<PromptLike> findByUserIdWithPrompt(Long userId, Pageable pageable);
 

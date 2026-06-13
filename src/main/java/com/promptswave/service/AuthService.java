@@ -12,6 +12,7 @@ import com.promptswave.dto.response.UserProfileResponse;
 import com.promptswave.entity.EmailVerificationToken;
 import com.promptswave.entity.PasswordResetToken;
 import com.promptswave.entity.User;
+import com.promptswave.enums.AuthProvider;
 import com.promptswave.enums.Role;
 import com.promptswave.exception.AccessDeniedException;
 import com.promptswave.exception.ConflictException;
@@ -37,6 +38,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
     private final TokenBlacklist tokenBlacklist;
+    private final GoogleTokenVerifierService googleTokenVerifier;
 
     public AuthService(
             UserRepo userRepo,
@@ -46,7 +48,8 @@ public class AuthService {
             JwtUtil jwtUtil,
             AuthenticationManager authenticationManager,
             EmailService emailService,
-            TokenBlacklist tokenBlacklist) {
+            TokenBlacklist tokenBlacklist,
+            GoogleTokenVerifierService googleTokenVerifier) {
         this.userRepo = userRepo;
         this.emailTokenRepo = emailTokenRepo;
         this.passwordResetTokenRepo = passwordResetTokenRepo;
@@ -55,9 +58,10 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
         this.emailService = emailService;
         this.tokenBlacklist = tokenBlacklist;
+        this.googleTokenVerifier = googleTokenVerifier;
     }
 
-    //  REGISTER
+    // REGISTER
 
     @Transactional
     public String register(RegisterRequest request) {
@@ -77,19 +81,20 @@ public class AuthService {
                 .country(request.country())
                 .referralSource(request.referralSource())
                 .role(Role.USER)
+                .authProvider(AuthProvider.LOCAL)
                 .isEmailVerified(false)
                 .isActive(true)
                 .build();
 
         userRepo.save(user);
 
-         sendVerificationToken(user);
+        sendVerificationToken(user);
 
         return "Registration successful. Please check your email to verify your account.";
     }
 
     // LOGIN
-    
+
     public AuthResponse login(String email, String password) {
         User user = userRepo.findByEmail(email.toLowerCase().trim())
                 .orElseThrow(() -> new ResourceNotFoundException("Invalid email or password"));
@@ -114,15 +119,72 @@ public class AuthService {
         return new AuthResponse(accessToken, refreshToken, toProfileResponse(user));
     }
 
+    // GOOGLE SIGN-IN / SIGN-UP
+
+    
+    @Transactional
+    public AuthResponse loginWithGoogle(String code, String referralSource) {
+        GoogleTokenVerifierService.GoogleUserInfo profile = googleTokenVerifier.exchangeCode(code);
+
+        if (!profile.emailVerified()) {
+            throw new IllegalArgumentException("Google account email is not verified");
+        }
+
+        String email = profile.email();
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Google token did not contain an email");
+        }
+        email = email.toLowerCase().trim();
+
+        String name = profile.name();
+        String picture = profile.picture();
+
+        User user = userRepo.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            // First time — create a GOOGLE account.
+            user = User.builder()
+                    .email(email)
+                    .name((name != null && !name.isBlank()) ? name.trim() : email)
+                    .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .profileIconUrl(picture)
+                    .referralSource(referralSource)
+                    .role(Role.USER)
+                    .authProvider(AuthProvider.GOOGLE)
+                    .isEmailVerified(true)
+                    .isActive(true)
+                    .build();
+            userRepo.save(user);
+        } else {
+            // Existing account — allow Google login and ensure it's verified.
+            if (!user.getIsActive()) {
+                throw new AccessDeniedException("Your account has been suspended. Please contact support.");
+            }
+            if (!Boolean.TRUE.equals(user.getIsEmailVerified())) {
+                user.setIsEmailVerified(true);
+            }
+            if (user.getProfileIconUrl() == null && picture != null) {
+                user.setProfileIconUrl(picture);
+            }
+        }
+
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepo.save(user);
+
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail(), user.getRole().name());
+
+        return new AuthResponse(accessToken, refreshToken, toProfileResponse(user));
+    }
+
     // LOGOUT
-   
 
     public void logout(String accessToken) {
         tokenBlacklist.blacklist(accessToken, null);
     }
 
     // REFRESH TOKEN
-    
+
     public Map<String, String> refresh(String refreshToken) {
         if (!jwtUtil.isTokenValid(refreshToken)) {
             throw new IllegalArgumentException("Refresh token is invalid or expired");
@@ -206,7 +268,7 @@ public class AuthService {
     }
 
     // RESET PASSWORD
-    
+
     @Transactional
     public String resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepo.findByToken(token)
@@ -230,7 +292,7 @@ public class AuthService {
         return "Password reset successfully. You can now log in.";
     }
 
-    //  CHANGE PASSWORD
+    // CHANGE PASSWORD
 
     public String changePassword(Long userId, String currentPassword, String newPassword) {
         User user = userRepo.findById(userId)
@@ -247,7 +309,7 @@ public class AuthService {
     }
 
     // CHANGE EMAIL
-    
+
     @Transactional
     public String changeEmail(Long userId, String newEmail, String password) {
         User user = userRepo.findById(userId)

@@ -203,6 +203,42 @@ public class PromptService {
         return toResponse(promptRepo.save(prompt));
     }
 
+    /** Admin: pin/unpin a prompt to the hero section. */
+    @Transactional
+    public PromptResponse toggleHeroPin(Long id) {
+        Prompt prompt = promptRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Prompt not found"));
+        prompt.setIsPinnedToHero(!Boolean.TRUE.equals(prompt.getIsPinnedToHero()));
+        return toResponse(promptRepo.save(prompt));
+    }
+
+    
+    public List<PromptSummaryResponse> getHeroPrompts(int limit, String sortBy) {
+        if (limit <= 0)
+            limit = 6;
+
+        List<Prompt> pinned = promptRepo.findByIsPinnedToHeroTrueAndIsPublishedTrueOrderByUpdatedAtDesc();
+
+        List<Prompt> hero = new ArrayList<>(
+                pinned.size() > limit ? pinned.subList(0, limit) : pinned);
+
+        int remaining = limit - hero.size();
+        if (remaining > 0) {
+            List<Long> excludeIds = new ArrayList<>(hero.stream().map(Prompt::getId).toList());
+            
+            if (excludeIds.isEmpty())
+                excludeIds.add(-1L);
+
+            Pageable topN = PageRequest.of(0, remaining);
+            List<Prompt> fillers = "copied".equalsIgnoreCase(sortBy)
+                    ? promptRepo.findTopByCopiesExcluding(excludeIds, topN)
+                    : promptRepo.findTopByLikesExcluding(excludeIds, topN);
+            hero.addAll(fillers);
+        }
+
+        return hero.stream().map(this::toSummaryResponse).toList();
+    }
+
     @Transactional
     public void deletePrompt(Long id) {
         if (!promptRepo.existsById(id)) {
@@ -301,6 +337,7 @@ public class PromptService {
                 prompt.getTimesCopied(),
                 prompt.getLikesCount(),
                 prompt.getIsPublished(),
+                prompt.getIsPinnedToHero(),
                 prompt.getUploadedBy().getName(),
                 prompt.getCreatedAt(),
                 prompt.getUpdatedAt());

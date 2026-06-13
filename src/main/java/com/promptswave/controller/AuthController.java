@@ -10,12 +10,14 @@ import org.springframework.web.bind.annotation.*;
 import com.promptswave.dto.request.ChangeEmailRequest;
 import com.promptswave.dto.request.ChangePasswordRequest;
 import com.promptswave.dto.request.ForgotPasswordRequest;
+import com.promptswave.dto.request.GoogleLoginRequest;
 import com.promptswave.dto.request.LoginRequest;
 import com.promptswave.dto.request.RegisterRequest;
 import com.promptswave.dto.request.ResetPasswordRequest;
 import com.promptswave.dto.response.AuthResponse;
 import com.promptswave.security.CustomUserDetails;
 import com.promptswave.service.AuthService;
+import com.promptswave.service.GoogleTokenVerifierService;
 
 import java.util.Map;
 
@@ -25,9 +27,11 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleTokenVerifierService googleTokenVerifier;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, GoogleTokenVerifierService googleTokenVerifier) {
         this.authService = authService;
+        this.googleTokenVerifier = googleTokenVerifier;
     }
 
     @PostMapping("/register")
@@ -41,6 +45,21 @@ public class AuthController {
     @Operation(summary = "Login and receive JWT tokens")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request.email(), request.password());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/google/url")
+    @Operation(summary = "Get the Google consent-screen URL for the frontend to open")
+    public ResponseEntity<Map<String, String>> googleAuthUrl(
+            @RequestParam(value = "state", required = false) String state) {
+        String url = googleTokenVerifier.buildAuthorizationUrl(state);
+        return ResponseEntity.ok(Map.of("url", url));
+    }
+
+    @PostMapping("/google")
+    @Operation(summary = "Sign in or sign up with a Google authorization code")
+    public ResponseEntity<AuthResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        AuthResponse response = authService.loginWithGoogle(request.code(), request.referralSource());
         return ResponseEntity.ok(response);
     }
 
