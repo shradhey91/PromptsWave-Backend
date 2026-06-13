@@ -5,6 +5,8 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import com.promptswave.entity.ContactMessage;
+
 @Service
 public class EmailService {
 
@@ -68,5 +70,23 @@ public class EmailService {
                         url + "\n\n" +
                         "This link expires in 24 hours.");
         mailSender.send(message);
+    }
+
+    public void sendContactNotification(String to, ContactMessage msg) {
+        String fullName = msg.getFirstName()
+                + (msg.getLastName() == null || msg.getLastName().isBlank() ? "" : " " + msg.getLastName());
+
+        SimpleMailMessage mail = new SimpleMailMessage();
+        mail.setFrom(fromAddress);
+        mail.setTo(to);
+        mail.setReplyTo(msg.getEmail());
+        mail.setSubject("[Contact] " + msg.getSubject());
+        mail.setText(
+                "New contact form submission on PromptsWave:\n\n" +
+                        "Name:    " + fullName + "\n" +
+                        "Email:   " + msg.getEmail() + "\n" +
+                        "Subject: " + msg.getSubject() + "\n\n" +
+                        "Message:\n" + msg.getMessage() + "\n");
+        mailSender.send(mail);
     }
 }
